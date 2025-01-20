@@ -1,0 +1,73 @@
+# Kanidm Helm Chart (non-official)
+
+{{ template "chart.versionBadge" . }}{{ template "chart.typeBadge" . }}{{ template "chart.appVersionBadge" . }}
+
+## Introduction
+
+This is a non-official Helm chart for the [Kanidm identity management platform](https://github.com/kanidm/kanidm). I use Kanidm exlusively for all of my identity needs with anything that speaks OIDC (and some that I bully into speaking OIDC). This was made mostly to suit my needs and use case, but I tried to work in some other use cases I could think of. If something about this chart doesn't meet the needs of your specific environment/deployment, feel free to open a PR and maybe we can adapt the chart to allow it. Enjoy.
+
+## Prerequisites
+
+* Tested against Kubernetes v1.30.1
+* Tested with Helm v3.16.3
+* If you want to run unit tests, you'll need to install the Helm unittests plugin. See the [Testing](#testing) section for more information.
+
+## Installation
+
+### Add Helm Repository
+
+TBD, you'll have to install by cloning the chart for now
+
+### Configuration Information
+
+There's a lot of configuration you can do here. At a high level, these are the top level objects you can disable/enable for your needs:
+
+* **Ingress**: If you don't require an Ingress resource, you can disable this using `ingress.enable: false`. If you do want to continue to use the Ingress, it is advised that you keep `service.https.type` set to `ClusterIP`. The Ingress is enabled by default, but does require some user provided values to work.
+* **Service**: There are two services here, ldaps and https. You can disable either or both by using `service.<servic_type>.enable: false`. Both services can be set to type of `ClusterIP`, `LoadBalancer`, or `NodePort`. They are both enabled and set to `ClusterIP` by default.
+* **Service Account**: If you decide you want (or don't want) a service account created to attach to the pod, you can control that with `serviceAccount.enable: false/true`. This is disabled by default.
+
+There is an assumption made that you will be using TLS in this stack, either by generating a certificate through a ClusterIssuer/Issuer or providing a pre-created Secret containing two keys: TLS Key and TLS Certificate Chain.
+
+The domain/origin URL of your Kanidm instance is controlled by `kanidm.domain` (required) and `kanidm.origin` (optional). If `kanidm.origin` is not specified, `kanidm.domain` is used in all instances where it would be referenced.
+
+Nearly any resource can have annotations and labels specifically applied to it. Additionally, you can set `global.(labels|annotations)` to apply labels and/or annotations to ALL resources created by this chart.
+
+For more specific configuration needs and further explanation of any values, please see the [full configuration values](#full-configuration-values) section.
+
+### Data Persistence
+
+There is no assumption made by this chart by default to give you any data persistence. The default behavior is to mount an `emptyDir: {}` volume at `/data` in the container. This means data will be lost if you restart the StatefulSet/Pod. If you would like to persist your Kanidm data (HIGHLY recommended), you have one of two options:
+
+* Use `kanidm.storage.existingClaim` to specify the name of an existing PersistentVolumeClaim to bind to the pod. This requires you create this and the underlying PersistentVolume ahead of time however you would like.
+* Use `kanidm.storage.volumeClaimTemplate` to use a PersistentVolumeClaimTemplate to generate a PVC and PV for you using the specified StorageClass. Be sure the StorageClass actually exists first.
+
+VolumeClaimTemplate should follow standard format like the following (customize to your needs):
+
+```yaml
+volumeClaimTemplate:
+  metadata:
+    name: volume-name
+  spec:
+    accessModes: [ "ReadWriteOnce" ]
+    resources:
+      requests:
+        storage: 10Gi
+    storageClassName: your-storage-class
+```
+
+If you're struggling with file permissions in your persistence (for example, over NFS), look into NFS `mapall` and `mapgroup` options. You can also use `statefulset.podSecurityContext` to configure the user or group files are accessed as.
+
+## Full Configuration Values
+
+{{ template "chart.valuesTable" . }}
+
+{{ template "helm-docs.versionFooter" . }}
+
+
+## Testing
+
+To run the unit tests for this chart, you'll need to install the [Helm unittests plugin](https://github.com/helm-unittest/helm-unittest/) plugin and run the following command from this directory:
+
+```shell
+helm unittest .
+```

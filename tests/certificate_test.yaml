@@ -1,0 +1,116 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
+suite: Test Certificate
+templates:
+  - templates/certificate.yaml
+chart:
+  version: 0.1.0
+  appVersion: 1.4.5
+release:
+  name: kanidm-helm-test
+  namespace: test
+tests:
+  - it: should exist and set correct Kind
+    asserts:
+      - isKind:
+          of: Certificate
+      - hasDocuments:
+          count: 1
+      - containsDocument:
+          kind: Certificate
+          apiVersion: cert-manager.io/v1
+
+  - it: should not create if externalSecret is enabled
+    set:
+      kanidm:
+        tls:
+          externalCertificateSecret:
+            enabled: true
+    capabilities:
+      apiVersions:
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should set correct namespace
+    asserts:
+      - equal:
+          path: metadata.namespace
+          value: test
+
+  - it: should set correct chart details
+    asserts:
+      - matchRegex:
+          path: metadata.name
+          pattern: kanidm
+      - equal:
+          path: metadata.labels
+          value:
+            app.kubernetes.io/managed-by: Helm
+            app.kubernetes.io/name: kanidm
+            app.kubernetes.io/instance: kanidm-helm-test
+            app.kubernetes.io/version: 1.4.5
+            app.kubernetes.io/component: tls
+            helm.sh/chart: kanidm-0.1.0
+
+  - it: should include extra labels
+    set:
+      global.labels.app0: bippity
+    asserts:
+      - isSubset:
+          path: metadata.labels
+          content:
+            app0: bippity
+
+  - it: should contain a valid issuer
+    set:
+      kanidm:
+        tls:
+          issuer:
+            kind: "ClusterIssuer"
+            name: "letsencrypt-prod-dns01"
+          hosts:
+            - example.com
+          secretName: "kanidm2-tls"
+    asserts:
+      - isNotNullOrEmpty:
+          path: spec.issuerRef
+      - equal:
+          path: spec.issuerRef.kind
+          value: ClusterIssuer
+      - equal:
+          path: spec.issuerRef.name
+          value: letsencrypt-prod-dns01
+
+  - it: should contain at least one valid host
+    set:
+      kanidm:
+        tls:
+          issuer:
+            kind: "ClusterIssuer"
+            name: "letsencrypt-prod-dns01"
+          hosts:
+            - example.com
+    asserts:
+      - notLengthEqual:
+          path: spec.dnsNames
+          count: 0
+      - contains:
+          path: spec.dnsNames
+          content: example.com
+
+  - it: should contain a secret name
+    set:
+      kanidm:
+        tls:
+          issuer:
+            kind: "ClusterIssuer"
+            name: "letsencrypt-prod-dns01"
+          hosts:
+            - example.com
+          secretName: "kanidm2-tls"
+    asserts:
+      - isNotNullOrEmpty:
+          path: spec.secretName
+      - equal:
+          path: spec.secretName
+          value: kanidm2-tls

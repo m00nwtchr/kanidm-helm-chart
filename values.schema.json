@@ -1,0 +1,579 @@
+{
+  "type": "object",
+  "required": [
+    "global",
+    "kanidm",
+    "serviceAccount",
+    "ingress",
+    "service",
+    "statefulset"
+  ],
+  "properties": {
+    "global": {
+      "type": "object",
+      "properties": {
+        "annotations": {
+          "type": "object",
+          "description": "Annotations to be added to all resources",
+          "default": {}
+        },
+        "labels": {
+          "type": "object",
+          "description": "Labels to be added to all resources",
+          "default": {}
+        }
+      }
+    },
+    "kanidm": {
+      "type": "object",
+      "properties": {
+        "domain": {
+          "type": "string",
+          "description": "The domain name for the Kanidm instance"
+        },
+        "origin": {
+          "type": "string",
+          "description": "The origin URL for the Kanidm instance" 
+        },
+        "backups": {
+          "type": "object",
+          "description": "Database backup configuration",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable or disable database backups",
+              "default": true
+            },
+            "path": {
+              "type": "string",
+              "description": "Path to store backups",
+              "default": "/data/backups"
+            },
+            "schedule": {
+              "type": "string",
+              "description": "Cron schedule for backups",
+              "default": "0 0 * * *"
+            }
+          },
+          "required": [
+            "enabled",
+            "path",
+            "schedule"
+          ]
+        },
+        "https": {
+          "type": "object",
+          "description": "Kanidm HTTPS configuration",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable adding or removing HTTPS port from pod",
+              "default": true
+            },
+            "port": {
+              "type": "integer",
+              "description": "Port to listen on for HTTPS connections",
+              "default": 8443
+            }
+          },
+          "required": [
+            "enabled",
+            "port"
+          ]
+        },
+        "ldaps": {
+          "type": "object",
+          "description": "Kanidm LDAPS configuration",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable adding or removing LDAPS port from pod",
+              "default": true
+            },
+            "port": {
+              "type": "integer",
+              "description": "Port to listen on for LDAPS connections",
+              "default": 3636
+            }
+          },
+          "required": [
+            "enabled",
+            "port"
+          ]
+        }
+      },
+      "required": [
+        "domain",
+        "origin",
+        "backups",
+        "https",
+        "ldaps",
+        "tls"
+      ]
+    },
+    "serviceAccount": {
+      "type": "object",
+      "description": "Service account configuration",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the service account to create"
+        },
+        "create": {
+          "type": "boolean",
+          "description": "Control creation of the service account",
+          "default": true
+        }
+      },
+      "if": {
+        "properties": {
+          "create": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "create",
+          "name"
+        ]
+      },
+      "else": {
+        "required": [
+          "create"
+        ]
+      }
+    },
+    "ingress": {
+      "type": "object",
+      "description": "Ingress configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable or disable ingress",
+          "default": true
+        },
+        "annotations": {
+          "type": "object",
+          "description": "Annotations to be added to the ingress resource",
+          "default": {}
+        },
+        "labels": {
+          "type": "object",
+          "description": "Labels to be added to the ingress resource",
+          "default": {}
+        },
+        "host": {
+          "type": "string",
+          "description": "Hostname for the ingress resource"
+        },
+        "tls": {
+          "type": "array",
+          "description": "TLS configuration for the ingress resource",
+          "items": {
+            "type": "object",
+            "properties": {
+              "hosts": {
+                "type": "array",
+                "description": "Hostnames for the TLS configuration",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "secretName": {
+                "type": "string",
+                "description": "Name of the secret containing the TLS certificate"
+              }
+            },
+            "required": [
+              "hosts",
+              "secretName"
+            ]
+          }
+        }
+      },
+      "if": {
+        "properties": {
+          "enabled": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "enabled",
+          "host"
+        ]
+      },
+      "else": {
+        "required": [
+          "enabled"
+        ]
+      }
+    },
+    "service": {
+      "https": {
+        "type": "object",
+        "description": "Kubernetes service configuration for HTTPS",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "Enable or disable the HTTPS service resource",
+            "default": true
+          },
+          "annotations": {
+            "type": "object",
+            "description": "Annotations to be added to the service resource",
+            "default": {}
+          },
+          "labels": {
+            "type": "object",
+            "description": "Labels to be added to the service resource",
+            "default": {}
+          },
+          "type": {
+            "type": "string",
+            "default": "ClusterIP",
+            "enum": ["ClusterIP", "NodePort", "LoadBalancer"],
+            "description": "Service type for the HTTPS service resource"
+          },
+          "port": {
+            "type": "integer",
+            "description": "Port to expose the HTTPS service on",
+            "default": 8443
+          }
+        },
+        "if": {
+          "properties": {
+            "enabled": {
+              "const": true
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "enabled",
+            "type",
+            "port"
+          ]
+        },
+        "else": {
+          "required": [
+            "enabled"
+          ]
+        }
+      },
+      "ldaps": {
+        "type": "object",
+        "description": "Kubernetes service configuration for LDAPS",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "Enable or disable the LDAPS service resource",
+            "default": true
+          },
+          "annotations": {
+            "type": "object",
+            "description": "Annotations to be added to the service resource",
+            "default": {}
+          },
+          "labels": {
+            "type": "object",
+            "description": "Labels to be added to the service resource",
+            "default": {}
+          },
+          "port": {
+            "type": "integer",
+            "description": "Port to expose the LDAPS service on",
+            "default": 3636
+          },
+          "type": {
+            "type": "string",
+            "default": "ClusterIP",
+            "description": "Service type for the LDAPS service resource",
+            "enum": ["ClusterIP", "NodePort", "LoadBalancer"]
+          }
+        },
+        "if": {
+          "properties": {
+            "enabled": {
+              "const": true
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "enabled",
+            "type",
+            "port"
+          ]
+        },
+        "else": {
+          "required": [
+            "enabled"
+          ]
+        }
+      },
+      "required": [
+        "https",
+        "ldaps"
+      ]
+    },
+    "statefulset": {
+      "type": "object",
+      "description": "Kanidm process StatefulSet configuration",
+      "properties": {
+        "annotations": {
+          "type": "object",
+          "description": "Annotations to be added to the StatefulSet resource",
+          "default": {}
+        },
+        "labels": {
+          "type": "object",
+          "description": "Labels to be added to the StatefulSet resource",
+          "default": {}
+        },
+        "podSecurityContext": {
+          "type": "object",
+          "description": "Pod security context configuration",
+          "default": {}
+        },
+        "containerSecurityContext": {
+          "type": "object",
+          "description": "Container security context configuration",
+          "default": {}
+        },
+        "resources": {
+          "type": "object",
+          "description": "Resource requests and limits for the kanidm container",
+          "properties": {
+            "requests": {
+              "type": "object",
+              "description": "Resource requests for the kanidm container",
+              "properties": {
+                "cpu": {
+                  "type": "string",
+                  "description": "CPU request for the kanidm container"
+                },
+                "memory": {
+                  "type": "string",
+                  "description": "Memory request for the kanidm container"
+                }
+              }
+            },
+            "limits": {
+              "type": "object",
+              "description": "Resource limits for the kanidm container",
+              "properties": {
+                "cpu": {
+                  "type": "string",
+                  "description": "CPU limit for the kanidm container"
+                },
+                "memory": {
+                  "type": "string",
+                  "description": "Memory limit for the kanidm container"
+                }
+              }
+            }
+          }
+        },
+        "imagePullSecrets": {
+          "type": "array",
+          "description": "Any necessary image pull secrets for the StatefulSet",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Name of the image pull secret"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        "image": {
+          "type": "object",
+          "description": "Kanidm container image configuration",
+          "properties": {
+            "repository": {
+              "type": "string",
+              "description": "Full repository (repository/image_name) notation for the target image"
+            },
+            "tag": {
+              "type": "string",
+              "description": "Tag for the Kanidm container image"
+            },
+            "pullPolicy": {
+              "type": "string",
+              "description": "Image pull policy for the Kanidm container",
+              "default": "IfNotPresent",
+              "enum": ["Always", "IfNotPresent", "Never"]
+            }
+          },
+          "required": [
+            "repository",
+            "tag",
+            "pullPolicy"
+          ]
+        },
+        "extraEnv": {
+          "type": "array",
+          "description": "Extra environment variables to be added to the kanidm container",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Name of the environment variable"
+              },
+              "value": {
+                "type": "string",
+                "description": "Value of the environment variable"
+              }
+            },
+            "required": [
+              "name",
+              "value"
+            ]
+          }
+        },
+        "livenessProbeEnabled": {
+          "type": "boolean",
+          "description": "Enable or disable the liveness probe for the kanidm container",
+          "default": true
+        },
+        "readinessProbeEnabled": {
+          "type": "boolean",
+          "description": "Enable or disable the readiness probe for the kanidm container",
+          "default": true
+        },
+        "extraPorts": {
+          "type": "array",
+          "description": "Extra ports to be exposed by the kanidm container",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Name of the port"
+              },
+              "containerPort": {
+                "type": "integer",
+                "description": "Port to expose"
+              }
+            },
+            "required": [
+              "name",
+              "containerPort"
+            ]
+          }
+        },
+        "storage": {
+          "description": "Storage configuration for persistent data",
+          "type": "object",
+          "oneOf": [
+            {
+              "maxProperties": 1,
+              "properties": {
+                "existingClaim": {
+                  "type": "string",
+                  "description": "Name of an existing PersistentVolumeClaim"
+                }
+              },
+              "required": [
+                "existingClaim"
+              ]
+            },
+            {
+              "maxProperties": 1,
+              "properties": {
+                "volumeClaimTemplate": {
+                  "type": "object",
+                  "description": "Template for a new PersistentVolumeClaim",
+                  "properties": {
+                    "metadata": {
+                      "type": "object",
+                      "description": "Metadata for the PersistentVolumeClaim",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "description": "Name of the volume to be attached to the container"
+                        }
+                      },
+                      "required": [
+                        "name"
+                      ]
+                    },
+                    "spec": {
+                      "type": "object",
+                      "description": "Spec for the PersistentVolumeClaim",
+                      "properties": {
+                        "accessModes": {
+                          "type": "array",
+                          "description": "Access modes for the PersistentVolumeClaim",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "resources": {
+                          "type": "object",
+                          "description": "Resources for the PersistentVolumeClaim",
+                          "properties": {
+                            "requests": {
+                              "type": "object",
+                              "description": "Resource requests for the PersistentVolumeClaim",
+                              "properties": {
+                                "storage": {
+                                  "type": "string",
+                                  "description": "Storage request for the PersistentVolumeClaim"
+                                }
+                              },
+                              "required": [
+                                "storage"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "requests"
+                          ]
+                        },
+                        "storageClassName": {
+                          "type": "string",
+                          "description": "Storage class name for the PersistentVolumeClaim"
+                        }
+                      },
+                      "required": [
+                        "accessModes",
+                        "resources",
+                        "storageClassName"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "metadata",
+                    "spec"
+                  ]
+                }
+              },
+              "required": [
+                "volumeClaimTemplate"
+              ]
+            },
+            {
+              "properties": {},
+              "required": []
+            }
+          ]
+        }
+      },
+      "required": [
+        "resources",
+        "image",
+        "livenessProbeEnabled",
+        "readinessProbeEnabled"
+      ]
+    }
+  }
+}

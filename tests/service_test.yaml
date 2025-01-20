@@ -1,0 +1,118 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
+suite: Test Service
+templates:
+  - templates/service.yaml
+chart:
+  version: 0.1.0
+  appVersion: 1.4.5
+release:
+  name: kanidm-helm-test
+  namespace: test
+tests:
+  - it: should exist and set correct Kind
+    asserts:
+      - isKind:
+          of: Service
+      - hasDocuments:
+          count: 2
+      - containsDocument:
+          kind: Service
+          apiVersion: v1
+      - containsDocument:
+          kind: Service
+          apiVersion: v1
+          name: kanidm-ldaps
+          any: true
+      - containsDocument:
+          kind: Service
+          apiVersion: v1
+          name: kanidm-https
+          any: true
+
+  - it: should only have one document if a service is disabled
+    set:
+      service:
+        ldaps:
+          enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+
+  - it: should set correct namespace
+    asserts:
+      - equal:
+          path: metadata.namespace
+          value: test
+
+  - it: should set correct chart details
+    set:
+      service:
+        ldaps:
+          enabled: false
+    asserts:
+      - matchRegex:
+          path: metadata.name
+          pattern: kanidm
+      - equal:
+          path: metadata.labels
+          value:
+            app.kubernetes.io/managed-by: Helm
+            app.kubernetes.io/name: kanidm
+            app.kubernetes.io/instance: kanidm-helm-test
+            app.kubernetes.io/version: 1.4.5
+            app.kubernetes.io/component: service-https
+            helm.sh/chart: kanidm-0.1.0
+
+  - it: should include extra labels and annotations
+    set:
+      global.labels.app0: bippity
+      service.lables.app1: boppity
+      global.annotations:
+        test.sh/my.annotation.0: beep
+      service.annotations:
+        test.sh/my.annotation.1: boop
+    asserts:
+      - isSubset:
+          path: metadata.labels
+          content:
+            app0: bippity
+
+  - it: should set sane https defaults
+    documentSelector:
+      path: metadata.name
+      value: kanidm-https
+    asserts:
+      - equal:
+          path: spec.ports[0].name
+          value: https
+      - equal:
+          path: spec.ports[0].port
+          value: 8443
+      - equal:
+          path: spec.ports[0].targetPort
+          value: 8443
+      - equal:
+          path: spec.selector
+          value:
+            app.kubernetes.io/name: kanidm
+            app.kubernetes.io/instance: kanidm-helm-test
+
+  - it: should set sane ldaps defaults
+    documentSelector:
+      path: metadata.name
+      value: kanidm-ldaps
+    asserts:
+      - equal:
+          path: spec.ports[0].name
+          value: ldaps
+      - equal:
+          path: spec.ports[0].port
+          value: 3636
+      - equal:
+          path: spec.ports[0].targetPort
+          value: 3636
+      - equal:
+          path: spec.selector
+          value:
+            app.kubernetes.io/name: kanidm
+            app.kubernetes.io/instance: kanidm-helm-test

@@ -1,0 +1,217 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
+suite: Test StatefulSet
+templates:
+  - templates/statefulset.yaml
+chart:
+  version: 0.1.0
+  appVersion: 1.4.5
+release:
+  name: kanidm-helm-test
+  namespace: test
+tests:
+  - it: should set correct Kind
+    asserts:
+      - isKind:
+          of: StatefulSet
+
+  - it: should set correct namespace
+    asserts:
+      - equal:
+          path: metadata.namespace
+          value: test
+
+  - it: should set correct chart details
+    asserts:
+      - matchRegex:
+          path: metadata.name
+          pattern: kanidm
+      - equal:
+          path: metadata.labels
+          value:
+            app.kubernetes.io/managed-by: Helm
+            app.kubernetes.io/name: kanidm
+            app.kubernetes.io/instance: kanidm-helm-test
+            app.kubernetes.io/version: 1.4.5
+            app.kubernetes.io/component: statefulset
+            helm.sh/chart: kanidm-0.1.0
+
+  - it: should include extra annotations and labels
+    set:
+      global.annotations:
+        test.sh/my.annotation.0: beep
+      statefulset.annotations:
+        test.sh/my.annotation.1: boop
+      global.labels.app0: bippity
+      statefulset.labels.app1: boppity
+    asserts:
+      - isSubset:
+          path: metadata.annotations
+          content:
+            test.sh/my.annotation.0: beep
+            test.sh/my.annotation.1: boop
+      - isSubset:
+          path: metadata.labels
+          content:
+            app0: bippity
+            app1: boppity
+
+  - it: should set sane defaults
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers
+          count: 1
+      - lengthEqual:
+          path: spec.template.spec.containers[?(@.name == "kanidm")].env
+          count: 1
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: 50M
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: 100Mi
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: 10m
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: 50Mi
+      - contains:
+          path: spec.template.spec.containers[0].volumes
+          content:
+            name: data
+            emptyDir: {}
+      - contains:
+          path: spec.template.spec.containers[0].volumes
+          content:
+            name: certificates
+            secret:
+              secretName: kanidm-tls
+      - equal:
+          path: spec.template.spec.containers[0].securityContext
+          value:
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              add:
+                - NET_BIND_SERVICE
+                - CHOWN
+                - SETUID
+                - SETGID
+                - FOWNER
+                - DAC_OVERRIDE
+              drop:
+                - ALL
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            containerPort: 8443
+            name: https
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            containerPort: 3636
+            name: ldaps
+      - exists:
+          path: spec.template.spec.containers[0].readinessProbe
+      - exists:
+          path: spec.template.spec.containers[0].livenessProbe
+      - notExists:
+          path: spec.template.spec.securityContext
+      - notExists:
+          path: spec.template.nodeSelector
+      - notExists:
+          path: spec.volumeClaimTemplates
+      - notExists:
+          path: spec.template.spec.imagePullSecrets
+
+  - it: should set basic user inputs
+    set:
+      statefulset.image.tag: boop
+      statefulset.image.repository: kanidm/beep
+      statefulset.resources.limits.cpu: 100m
+      statefulset.resources.limits.memory: 200Mi
+      statefulset.resources.requests.cpu: 50m
+      statefulset.resources.requests.memory: 100Mi
+      statefulset.podSecurityContext:
+        runAsUser: 1006
+        runAsGroup: 1006
+        fsGroup: 1006
+        fsGroupChangePolicy: Always
+      statefulset.containerSecurityContext:
+        seccompProfile:
+          type: RuntimeDefault
+        capabilities:
+          add:
+            - ALL
+      statefulset.storage.existingClaim: kanidm-data
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: kanidm/beep:boop
+      - equal:
+          path: spec.template.spec.containers[0].resources
+          value:
+            limits:
+              cpu: 100m
+              memory: 200Mi
+            requests:
+              cpu: 50m
+              memory: 100Mi
+      - equal:
+          path: spec.template.spec.securityContext
+          value:
+            runAsUser: 1006
+            runAsGroup: 1006
+            fsGroup: 1006
+            fsGroupChangePolicy: Always
+      - equal:
+          path: spec.template.spec.containers[0].securityContext
+          value:
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              add:
+                - ALL
+      - contains:
+          path: spec.template.spec.containers[0].volumes
+          content:
+            name: data
+            persistentVolumeClaim:
+              claimName: kanidm-data
+
+  - it: should set extraEnv
+    set:
+      statefulset.extraEnv[0]:
+        name: TIMEZONE
+        value: America/Chicago
+    asserts:
+      - isKind:
+          of: StatefulSet
+      - matchRegex:
+          path: metadata.name
+          pattern: kanidm
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "kanidm")].env
+          content:
+            name: TIMEZONE
+            value: America/Chicago
+
+  - it: should disable port if https set to false
+    set:
+      kanidm.https.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            containerPort: 8443
+            name: https
+
+  - it: should disable port if ldaps set to false
+    set:
+      kanidm.ldaps.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            containerPort: 3636
+            name: ldaps

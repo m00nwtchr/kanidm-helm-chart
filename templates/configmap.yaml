@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kanidm.name" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: config
+    {{- include "kanidm.labels" . | nindent 4 }}
+data:
+  server.toml: |
+    bindaddress = "[::]:{{ .Values.kanidm.https.port }}"
+    ldapbindaddress = "[::]:{{ .Values.kanidm.ldaps.port }}"
+    trust_x_forward_for = true
+    tls_chain = "/certs/{{ .Values.kanidm.tls.tlsChainSecretKeyName }}"
+    tls_key = "/certs/{{ .Values.kanidm.tls.tlsKeySecretKeyName }}"
+    db_path = "/data/kanidm.db"
+    domain = "{{ .Values.kanidm.domain }}"
+    origin = "https://{{ .Values.kanidm.origin | default .Values.kanidm.domain }}"
+    {{- if eq (.Values.kanidm.backups.enabled | toString ) "true" }}
+    [online_backup]
+    path = "{{ .Values.kanidm.backups.path }}"
+    schedule = "{{ .Values.kanidm.backups.schedule }}"
+    {{- end }}

@@ -1,0 +1,229 @@
+global:
+  # -- Labels that will be applied to all resources
+  # @default -- {}
+  # @section -- Global
+  labels: {}
+  # -- Annotations that will be applied to all resources
+  # @default -- {}
+  # @section -- Global
+  annotations: {}
+
+kanidm:
+  # -- Domain to use for Kanidm
+  # @section -- Kanidm Configuration (Top Level)
+  domain: ""
+  # -- Origin to use for Kanidm (if different from domain)
+  # @section -- Kanidm Configuration (Top Level)
+  origin: ""
+  backups:
+    # -- Enable/disable database backups
+    # @default -- true
+    # @section -- Kanidm Configuration (Backups)
+    enabled: true
+    # -- Path to store backups
+    # @default -- /data/backups
+    # @section -- Kanidm Configuration (Backups)
+    path: /data/backups
+    # -- Schedule for backups
+    # @default -- "00 00 * * *"
+    # @section -- Kanidm Configuration (Backups)
+    schedule: "00 00 * * *"
+  https:
+    # -- Enable/disable the HTTPS service
+    # @default -- true
+    # @section -- Kanidm Configuration (Services)
+    enabled: true
+    # -- Port to use for the HTTPS service
+    # @default -- 8443
+    # @section -- Kanidm Configuration (Services)
+    port: 8443
+  ldaps:
+    # -- Enable/disable the LDAPS service
+    # @default -- true
+    # @section -- Kanidm Configuration (Services)
+    enabled: true
+    # -- Port to use for the LDAPS service
+    # @default -- 3636
+    # @section -- Kanidm Configuration (Services)
+    port: 3636
+  tls:
+    externalCertificateSecret:
+      # -- Enable/disable the use of an external certificate resource (utually exclusive with `kanidm.tls.issuer`)
+      # @default -- false
+      # @section -- Kanidm Configuration (TLS)
+      enabled: false
+    # -- Certificate issuer to use with ClusterIssuer/Issuer for cert generation (mutually exclusive with `kanidm.tls.externalCertificateSecret`)
+    # @default -- {}
+    # @section -- Kanidm Configuration (TLS)
+    issuer: {}
+    # -- Hosts to use for the TLS certificate
+    # @default -- []
+    # @section -- Kanidm Configuration (TLS)
+    hosts: []
+    # -- Secret name to use for the TLS certificate
+    # @default -- "kanidm-tls"
+    # @section -- Kanidm Configuration (TLS)
+    secretName: "kanidm-tls"
+    # -- Secret key that holds the TLS certificate key
+    # @default -- "tls.key"
+    # @section -- Kanidm Configuration (TLS)
+    tlsKeySecretKeyName: "tls.key"
+    # -- Secret key that holds the TLS certificate chain
+    # @default -- "tls.crt"
+    # @section -- Kanidm Configuration (TLS)
+    tlsChainSecretKeyName: "tls.crt"
+
+serviceAccount:
+  # -- Enable/disable creation of a dedicated Kubernetes Service Account
+  # @default -- false
+  # @section -- Service Account
+  create: false
+  # -- Name of the service account to use
+  # @default -- ""
+  # @section -- Service Account
+  name: ""
+
+ingress:
+  # -- Enable/disable the creation of an Ingress resource
+  # @default -- true
+  # @section -- Ingress
+  enabled: true
+  # -- IngressClass to use
+  # @default -- ""
+  # @section -- Ingress
+  ingressClassName: ""
+  # -- Annotations to apply to the Ingress resource
+  # @default -- {}
+  # @section -- Ingress
+  annotations: {}
+  # -- Labels to apply to the Ingress resource
+  # @default -- {}
+  # @section -- Ingress
+  labels: {}
+  # -- Hostname to use for the Ingress
+  # @default -- ""
+  # @section -- Ingress
+  host: ""
+
+service:
+  https:
+    # -- Annotations to apply to the HTTPS Service resource
+    # @default -- {}
+    # @section -- Service
+    annotations: {}
+    # -- Labels to apply to the HTTPS Service resource
+    # @default -- {}
+    # @section -- Service
+    labels: {}
+    # -- Enable/disable the HTTPS Service resource
+    # @default -- true
+    # @section -- Service
+    enabled: "true"
+    # -- Service type to use for HTTPS (can be one of ClusterIP, NodePort, LoadBalancer)
+    # @default -- ClusterIP
+    # @section -- Service
+    type: ClusterIP
+    # -- Port to use for the HTTPS Service resource
+    # @default -- 8443
+    # @section -- Service
+    port: 8443
+  ldaps:
+    # -- Annotations to apply to the LDAPS Service resource
+    # @default -- {}
+    # @section -- Service
+    annotations: {}
+    # -- Labels to apply to the LDAPS Service resource
+    # @default -- {}
+    # @section -- Service
+    labels: {}
+    # -- Enable/disable the LDAPS Service resource
+    # @default -- true
+    # @section -- Service
+    enabled: "true"
+    # -- Service type to use for LDAPS (can be one of ClusterIP, NodePort, LoadBalancer)
+    # @default -- ClusterIP
+    # @section -- Service
+    type: ClusterIP
+    # -- Port to use for the LDAPS Service resource
+    # @default -- 3636
+    # @section -- Service
+    port: 3636
+
+statefulset:
+  # -- Annotations to apply to the StatefulSet resource
+  # @default -- {}
+  # @section -- StatefulSet
+  annotations: {}
+  # -- Labels to apply to the StatefulSet resource
+  # @default -- {}
+  # @section -- StatefulSet
+  labels: {}
+  # -- PodSecurityContext for StatefulSet object
+  # @default -- {}
+  # @section -- StatefulSet
+  podSecurityContext: {}
+  # -- SecurityContext for the kanidm container
+  # @default -- {}
+  # @section -- StatefulSet
+  containerSecurityContext: {}
+  # -- Image pull secrets for use with private registries
+  # @default -- []
+  # @section -- StatefulSet
+  imagePullSecrets: []
+  image:
+    # -- Image to use for the kanidm container (must be in format repostiory/image_name)
+    # @default -- kanidm/server
+    # @section -- StatefulSet
+    repository: kanidm/server
+    # -- Tag to use for the kanidm image
+    # @default -- latest
+    # @section -- StatefulSet
+    tag: latest
+    # -- pullPolicy to use for kanidm images
+    # @default -- IfNotPresent
+    # @section -- StatefulSet
+    pullPolicy: IfNotPresent
+  # -- Extra environment variables to pass to the kanidm container. Should be in [{"name": name, "value": value}] format
+  # @default -- []
+  # @section -- StatefulSet
+  extraEnv: []
+  # -- Enable/disable liveness probe
+  # @default -- true
+  # @section -- StatefulSet
+  livenessProbeEnabled: true
+  # -- Enable/disable readiness probe
+  # @default -- true
+  # @section -- StatefulSet
+  readinessProbeEnabled: true
+  # -- Extra ports to expose on the kanidm container. Should be in [{"name": name, "containerPort": port}] format
+  # @default -- []
+  # @section -- StatefulSet
+  extraPorts: []
+  resources:
+    limits:
+      # -- CPU limit for the kanidm container
+      # @default -- 50M
+      # @section -- StatefulSet
+      cpu: 50M
+      # -- Memory limit for the kanidm container
+      # @default -- 100Mi
+      # @section -- StatefulSet
+      memory: 100Mi
+    requests:
+      # -- CPU request for the kanidm container
+      # @default -- 10m
+      # @section -- StatefulSet
+      cpu: 10m
+      # -- Memory request for the kanidm container
+      # @default -- 50Mi
+      # @section -- StatefulSet
+      memory: 50Mi
+  storage:
+    # -- Existing PVC to use for the kanidm data volume
+    # @default -- null
+    # @section -- StatefulSet
+    existingClaim: null
+    # -- VolumeClaimTemplate to use for kanidm data PVC creation. See [#data-persistence](Data Persistence) for more information
+    # @default -- {}
+    # @section -- StatefulSet
+    volumeClaimTemplate: null

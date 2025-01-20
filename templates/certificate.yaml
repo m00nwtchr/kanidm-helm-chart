@@ -1,0 +1,23 @@
+{{ if eq (.Values.kanidm.tls.externalCertificateSecret.enabled | toString ) "false" }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "kanidm.name" . }}-tls
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: tls
+    {{- include "kanidm.labels" . | nindent 4 }}
+spec:
+  dnsNames:
+    {{- toYaml .Values.kanidm.tls.hosts | nindent 4 }}
+  {{- with .Values.kanidm.tls.issuer }}
+  issuerRef:
+    group: cert-manager.io
+    kind: {{ .kind }}
+    name: {{ .name }}
+  {{- end }}
+  secretName: {{ include "kanidm.tlsSecretName" . }}
+  usages:
+    - digital signature
+    - key encipherment
+{{ end }}

@@ -1,0 +1,59 @@
+{{ if eq (.Values.service.https.enabled | toString) "true" }}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/component: service-https
+  {{- include "kanidm.labels" . | nindent 4 -}}
+  {{- if .Values.service.https.labels }}
+  {{- toYaml .Values.service.https.labels | nindent 4 }}
+  {{- end }}
+  annotations:
+  {{- if .Values.global.annotations }}
+  {{- toYaml .Values.global.annotations | nindent 4 }}
+  {{- end }}
+  {{- if .Values.service.https.annotations }}
+  {{- toYaml .Values.service.https.annotations | nindent 4 -}}
+  {{- end }}
+  name: {{ include "kanidm.name" . }}-https
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+  - name: https
+    port: {{ .Values.kanidm.https.port }}
+    protocol: TCP
+    targetPort: {{ .Values.service.https.port }}
+  selector:
+    {{- include "kanidm.selectorLabels" . | nindent 4 }}
+  type: {{ .Values.service.https.type }}
+{{ end }}
+{{ if eq (.Values.service.ldaps.enabled | toString) "true" }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/component: service-ldaps
+  {{- include "kanidm.labels" . | nindent 4 -}}
+  {{- if .Values.service.ldaps.labels }}
+  {{- toYaml .Values.service.ldaps.labels | nindent 4 }}
+  {{- end }}
+  annotations:
+  {{- if .Values.global.annotations }}
+  {{- toYaml .Values.global.annotations | nindent 4 }}
+  {{- end }}
+  {{- if .Values.service.ldaps.annotations }}
+  {{- toYaml .Values.service.ldaps.annotations | nindent 4 -}}
+  {{- end }}
+  name: {{ include "kanidm.name" . }}-ldaps
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+  - name: ldaps
+    port: {{ .Values.kanidm.ldaps.port }}
+    protocol: TCP
+    targetPort: {{ .Values.service.ldaps.port }}
+  selector:
+    {{ include "kanidm.selectorLabels" . | nindent 4 }}
+  type: {{ .Values.service.ldaps.type }}
+{{ end }}

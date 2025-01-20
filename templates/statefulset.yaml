@@ -1,0 +1,138 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "kanidm.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: statefulset
+  {{- include "kanidm.labels" . | nindent 4 -}}
+  {{- if .Values.statefulset.labels }}
+  {{- toYaml .Values.statefulset.labels | nindent 4 }}
+  {{- end }}
+  annotations:
+  {{- if .Values.global.annotations }}
+  {{- toYaml .Values.global.annotations | nindent 4 }}
+  {{- end }}
+  {{- if .Values.statefulset.annotations }}
+  {{- toYaml .Values.statefulset.annotations | nindent 4 -}}
+  {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "kanidm.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kanidm.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "kanidm.serviceAccountName" . }}
+      {{ if .Values.statefulset.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.statefulset.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      dnsPolicy: {{ .Values.statefulset.dnsPolicy | default "Default" }}
+      terminationGracePeriodSeconds: {{ .Values.statefulset.terminationGracePeriodSeconds | default 60 }}
+      {{- if .Values.statefulset.podSecurityContext }}
+      securityContext:
+        {{- toYaml .Values.statefulset.podSecurityContext | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.statefulset.image.repository }}:{{ .Values.statefulset.image.tag }}"
+          imagePullPolicy: {{ .Values.statefulset.image.pullPolicy }}
+          env:
+            - name: KANIDM_ADMIN_BIND_PATH
+              value: "/var/run/kanidmd.sock"
+            {{- if .Values.statefulset.extraEnv }}
+            {{- toYaml .Values.statefulset.extraEnv | nindent 12 }}
+            {{- end }}
+          {{- if eq (.Values.statefulset.livenessProbeEnabled | toString ) "true" }}
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /status
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          {{- end }}
+          {{- if eq (.Values.statefulset.readinessProbeEnabled | toString ) "true" }}
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /status
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          {{- end }}
+          ports:
+            {{- if eq (.Values.kanidm.https.enabled | toString ) "true" }}
+            - containerPort: {{ .Values.kanidm.https.port }}
+              name: https
+            {{- end }}
+            {{- if eq (.Values.kanidm.ldaps.enabled | toString ) "true" }}
+            - containerPort: {{ .Values.kanidm.ldaps.port }}
+              name: ldaps
+            {{- end }}
+            {{- if .Values.statefulset.extraPorts }}
+            {{- toYaml .Values.statefulset.extraPorts | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            - name: {{ include "kanidm.dataVolumeName" . }}
+              mountPath: /data
+            - name: config
+              mountPath: /data/server.toml
+              subPath: server.toml
+              readOnly: true
+            - name: certificates
+              mountPath: /certs
+              readOnly: true
+          securityContext:
+            {{- if .Values.statefulset.containerSecurityContext }}
+            {{ toYaml .Values.statefulset.containerSecurityContext | nindent 12 }}
+            {{- else }}
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              add:
+                - NET_BIND_SERVICE
+                - CHOWN
+                - SETUID
+                - SETGID
+                - FOWNER
+                - DAC_OVERRIDE
+              drop:
+                - ALL
+            {{- end }}
+          resources:
+            limits:
+              cpu: {{ .Values.statefulset.resources.limits.cpu  }}
+              memory: {{ .Values.statefulset.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.statefulset.resources.requests.cpu }}
+              memory: {{ .Values.statefulset.resources.requests.memory }}
+          volumes:
+            - name: config
+              configMap:
+                name: {{ include "kanidm.name" . }}-config
+            - name: certificates
+              secret:
+                secretName: {{ include "kanidm.tlsSecretName" . }}
+            {{- if .Values.statefulset.storage.existingClaim }}
+            - name: data
+              persistentVolumeClaim:
+                claimName: {{ .Values.statefulset.storage.existingClaim | default "kanidm-data" }}
+            {{- end }}
+            {{- if and (not .Values.statefulset.storage.existingClaim) (not .Values.statefulset.storage.volumeClaimTemplate) }}
+            - name: data
+              emptyDir: {}
+            {{- end }}
+  {{- if .Values.statefulset.storage.volumeClaimTemplate }}
+  volumeClaimTemplates:
+  {{- toYaml .Values.statefulset.storage.volumeClaimTemplate | nindent 4 }}
+  {{- end }}

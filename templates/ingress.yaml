@@ -1,0 +1,38 @@
+{{- if eq (.Values.ingress.enabled | toString ) "true" }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "kanidm.name" . }}-web
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: ingress
+  {{- include "kanidm.labels" . | nindent 4 }}
+  {{- if .Values.ingress.labels }}
+  {{ toYaml .Values.ingress.labels | nindent 4 }}
+  {{- end }}
+  annotations:
+  {{- if .Values.global.annotations }}
+  {{- toYaml .Values.global.annotations | nindent 4 }}
+  {{- end }}
+  {{- if .Values.ingress.annotations }}
+  {{- toYaml .Values.ingress.annotations | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.ingressClassName }}
+  rules:
+    - host: {{ .Values.ingress.host | default .Values.kanidm.domain }}
+      http:
+        paths:
+          - pathType: Prefix
+            path: /
+            backend:
+              service:
+                name: {{ include "kanidm.name" . }}-https
+                port:
+                  number: {{ .Values.kanidm.https.port }}
+  tls:
+  - hosts:
+    - {{ .Values.ingress.host | default .Values.kanidm.domain }}
+    secretName: {{ include "kanidm.tlsSecretName" . }}
+{{- end }}
