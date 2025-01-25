@@ -126,4 +126,4 @@ spec:
         - name: data
           emptyDir: {}
   volumeClaimTemplates:
-  {{- toYaml .Values.statefulset.storage.volumeClaimTemplate | nindent 4 }}
+  - {{- toYaml .Values.statefulset.storage.volumeClaimTemplate | nindent 4 }}
