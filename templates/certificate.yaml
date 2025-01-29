@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/component: tls
     {{- include "kanidm.labels" . | nindent 4 }}
 spec:
-  {{- toYaml .Values.kanidm.tls.certificate | nindent 2 }}
+{{- toYaml .Values.kanidm.tls.certificate | nindent 4 }}
   dnsNames:
     {{- toYaml .Values.kanidm.tls.hosts | nindent 4 }}
   {{- with .Values.kanidm.tls.issuer }}
