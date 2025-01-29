@@ -16,9 +16,13 @@ spec:
     kind: {{ .kind }}
     name: {{ .name }}
   {{- end }}
+  {{- with .Values.kanidm.tls.privateKey }}
+  privateKey:
+    kind: {{ .algorithm }}
+    name: {{ .size }}
+  {{- end }}
   secretName: {{ include "kanidm.tlsSecretName" . }}
   usages:
     - digital signature
     - key encipherment
-  {{- toYaml .Values.kanidm.tls.certificate | nindent 2 }}
 {{ end }}
