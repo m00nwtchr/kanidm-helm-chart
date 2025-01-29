@@ -8,6 +8,7 @@ metadata:
     app.kubernetes.io/component: tls
     {{- include "kanidm.labels" . | nindent 4 }}
 spec:
+  {{- toYaml .Values.kanidm.tls.certificate | nindent 2 }}
   dnsNames:
     {{- toYaml .Values.kanidm.tls.hosts | nindent 4 }}
   {{- with .Values.kanidm.tls.issuer }}
@@ -20,6 +21,4 @@ spec:
   usages:
     - digital signature
     - key encipherment
-    
-{{- toYaml .Values.kanidm.tls.certificate | nindent 2 }}
 {{ end }}
