@@ -18,8 +18,8 @@ spec:
   {{- end }}
   {{- with .Values.kanidm.tls.privateKey }}
   privateKey:
-    kind: {{ .algorithm }}
-    name: {{ .size }}
+    algorithm: {{ .algorithm }}
+    size: {{ .size }}
   {{- end }}
   secretName: {{ include "kanidm.tlsSecretName" . }}
   usages:
