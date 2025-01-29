@@ -20,5 +20,5 @@ spec:
   usages:
     - digital signature
     - key encipherment
-  {{- toYaml .Values.kanidm.tls.certificate | indent 2 }}
+  {{- toYaml .Values.kanidm.tls.certificate | nindent 2 }}
 {{ end }}
