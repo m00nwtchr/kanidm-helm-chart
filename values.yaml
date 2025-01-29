@@ -72,6 +72,7 @@ kanidm:
     # @default -- "tls.crt"
     # @section -- Kanidm Configuration (TLS)
     tlsChainSecretKeyName: "tls.crt"
+    certificate: {}
 
 serviceAccount:
   # -- Enable/disable creation of a dedicated Kubernetes Service Account
